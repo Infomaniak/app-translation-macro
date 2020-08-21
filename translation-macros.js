@@ -18,29 +18,28 @@
     for (var i = 2; i < 1000; i += 1) {
         var key = translationSheet.GetRange("A" + i).GetValue();
         if (key.localeCompare("")) {
-            var rowValue = translationSheet.GetRange("B" + i).GetValue().replace(/'/g, "’");
-            var result = generateKey(rowValue, key);
+            var result = generateKey(translationSheet, "B", i, key);
             ouptutFrIos += result[0];
             ouptutFrAndroid += result[1];
 
 
             rowValue = translationSheet.GetRange("C" + i).GetValue().replace(/'/g, "’");
-            result = generateKey(rowValue, key);
+            result = generateKey(translationSheet, "C", i, key);
             ouptutDeIos += result[0];
             ouptutDeAndroid += result[1];
 
             rowValue = translationSheet.GetRange("D" + i).GetValue().replace(/'/g, "’");
-            result = generateKey(rowValue, key);
+            result = generateKey(translationSheet, "D", i, key);
             ouptutEnIos += result[0];
             ouptutEnAndroid += result[1];
 
             rowValue = translationSheet.GetRange("E" + i).GetValue().replace(/'/g, "’");
-            result = generateKey(rowValue, key);
+            result = generateKey(translationSheet, "E", i, key);
             ouptutItIos += result[0];
             ouptutItAndroid += result[1];
 
             rowValue = translationSheet.GetRange("F" + i).GetValue().replace(/'/g, "’");
-            result = generateKey(rowValue, key);
+            result = generateKey(translationSheet, "F", i, key);
             ouptutEsIos += result[0];
             ouptutEsAndroid += result[1];
 
@@ -66,15 +65,44 @@
     resultSheetAndroid.GetRange("D2").SetValue(ouptutItAndroid);
     resultSheetAndroid.GetRange("E2").SetValue(ouptutEsAndroid);
 
-    function generateKey(rowValue, key) {
+    function generateKey(sheet, column, row, key) {
+        var rowValue = sheet.GetRange(column + row).GetValue().replace(/'/g, "’");
         var resultIos = "";
         var resultAndroid = "";
         if (rowValue.includes("</b>")) {
             resultIos = '"' + key + '"' + " = " + '"<html><head><meta charset=\'utf-8\'></head>' + rowValue + '</html>";\n';
-            resultAndroid = '\t<string name="' + key + '"><![CDATA[' + rowValue + ']]></string>\n';
+            if (key.includes("##{")) {
+                if (key.includes("##{one}")) {
+                    resultAndroid = '<plurals name="' + key.replace("##{one}", "") + '">\n';
+                    resultAndroid += '<item quantity="one">![CDATA[' + rowValue + ']]></item>\n';
+                    var nextKey = sheet.GetRange("A" + (i + 1)).GetValue();
+
+                    if (nextKey.includes("##{other}")) {
+                        var nextRowValue = sheet.GetRange(column + (row + 1)).GetValue().replace(/'/g, "’");
+                        resultAndroid += '<item quantity="other">![CDATA[' + nextRowValue + ']]></item>\n';
+                    }
+                    resultAndroid += '</plurals>\n';
+                }
+            } else {
+                resultAndroid = '\t<string name="' + key + '"><![CDATA[' + rowValue + ']]></string>\n';
+            }
         } else {
             resultIos = '"' + key + '"' + " = " + '"' + rowValue + '";\n';
-            resultAndroid = '\t<string name="' + key + '">' + rowValue + '</string>\n';
+            if (key.includes("##{")) {
+                if (key.includes("##{one}")) {
+                    resultAndroid = '<plurals name="' + key.replace("##{one}", "") + '">\n';
+                    resultAndroid += '<item quantity="one">' + rowValue + '</item>\n';
+                    var nextKey = sheet.GetRange("A" + (i + 1)).GetValue();
+
+                    if (nextKey.includes("##{other}")) {
+                        var nextRowValue = sheet.GetRange(column + (row + 1)).GetValue().replace(/'/g, "’");
+                        resultAndroid += '<item quantity="other">' + nextRowValue + '</item>\n';
+                    }
+                    resultAndroid += '</plurals>\n';
+                }
+            } else {
+                resultAndroid = '\t<string name="' + key + '">' + rowValue + '</string>\n';
+            }
         }
         return [resultIos, resultAndroid];
     }
